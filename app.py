@@ -11,7 +11,7 @@ st.set_page_config(
 )
 
 # --- LOGO DO IFMG NA BARRA LATERAL ---
-URL_LOGO_IFMG = "https://www.ifmg.edu.br/portal/imagens/logomarca/ifmg_vertical.png"
+URL_LOGO_IFMG = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Instituto_Federal_de_Minas_Gerais_-_Marca_2015.svg/1200px-Instituto_Federal_de_Minas_Gerais_-_Marca_2015.svg.png"
 
 try:
     st.sidebar.image(URL_LOGO_IFMG, use_container_width=True)
