@@ -1,6 +1,6 @@
 import glob
-import re
 import os
+import re
 import pandas as pd
 import streamlit as st
 from unidecode import unidecode
@@ -15,13 +15,12 @@ st.title("🔍 Consulta de Escolas (Pública / Privada)")
 st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
 
 
-# Função para normalizar textos (remove acentos, símbolos e põe em caixa baixa)
 def normalizar_texto(texto):
     if not isinstance(texto, str):
         return ""
     texto = unidecode(texto.lower())
-    texto = re.sub(r"[^\w\s]", "", texto)  # Remove pontuações
-    return texto.strip()
+    texto = re.sub(r"[^\w\s]", " ", texto)  # Remove pontuações
+    return " ".join(texto.split())
 
 
 @st.cache_data
@@ -78,7 +77,7 @@ def carregar_dados():
         }
     )
 
-    # Coluna auxiliar otimizada para busca aproximada/flexível
+    # Coluna auxiliar otimizada para busca flexível
     df["NOME_NORMALIZADO"] = df["Nome da Escola"].apply(normalizar_texto)
 
     return df
@@ -91,7 +90,6 @@ try:
     # --- BARRA LATERAL / FILTROS PRELIMINARES ---
     st.sidebar.header("📌 Filtros de Localização")
 
-    # Filtro de Estado (UF)
     estados = ["Todos"] + sorted(df_base["UF"].dropna().unique().tolist())
     uf_selecionada = st.sidebar.selectbox("Selecione o Estado (UF):", estados)
 
@@ -100,7 +98,6 @@ try:
     else:
         df_filtrado = df_base
 
-    # Filtro de Município
     municipios = ["Todos"] + sorted(
         df_filtrado["Município"].dropna().unique().tolist()
     )
@@ -123,32 +120,38 @@ try:
 
     # --- CAMPO DE BUSCA PRINCIPAL ---
     busca = st.text_input(
-        "Digite o Nome da Escola (ou termos aproximados / Código INEP) e aperte Enter:"
+        "Digite o Nome da Escola (ex: Caetano Azeredo) ou Código INEP e aperte Enter:"
     )
 
     if busca:
-        busca_normalizada = normalizar_texto(busca)
-        palavras_chave = busca_normalizada.split()
+        busca_limpa = busca.strip()
 
-        # Verifica se o termo digitado é um número (Código INEP)
-        if busca.strip().isdigit():
+        # Busca por Código INEP caso seja número
+        if busca_limpa.isdigit():
             resultado = df_filtrado[
-                df_filtrado["Código INEP"].astype(str).str.contains(busca.strip(), na=False)
+                df_filtrado["Código INEP"].astype(str).str.contains(busca_limpa, na=False)
             ]
         else:
-            # Filtro aproximado: busca registros que contenham TODAS as palavras digitadas, independente da ordem ou acentos
+            # Busca cada palavra isoladamente no nome da escola
+            palavras = normalizar_texto(busca_limpa).split()
+            
+            # Filtra ignorando termos genéricos se o usuário digitar "Escola"
+            palavras_filtradas = [p for p in palavras if p not in ["escola", "colegio", "estual", "municipal"]]
+            if not palavras_filtradas:
+                palavras_filtradas = palavras
+
             mascara = pd.Series([True] * len(df_filtrado), index=df_filtrado.index)
-            for palavra in palavras_chave:
+            for palavra in palavras_filtradas:
                 mascara = mascara & df_filtrado["NOME_NORMALIZADO"].str.contains(
-                    palavra, na=False
+                    re.escape(palavra), na=False
                 )
 
             resultado = df_filtrado[mascara]
     else:
-        resultado = df_filtrado
+        resultado = pd.DataFrame()
 
     # --- EXIBIÇÃO DOS RESULTADOS ---
-    if busca or uf_selecionada != "Todos" or municipio_selecionado != "Todos":
+    if busca:
         if not resultado.empty:
             st.success(f"Encontrado(s) {len(resultado)} registro(s):")
             st.dataframe(
@@ -165,11 +168,9 @@ try:
                 hide_index=True,
             )
         else:
-            st.warning("Nenhuma escola encontrada com os termos/filtros selecionados.")
+            st.warning("Nenhuma escola encontrada. Tente buscar apenas o nome principal (ex: 'Caetano Azeredo').")
     else:
-        st.info(
-            "💡 Utilize a barra lateral para filtrar por Estado/Município ou digite o nome/código na caixa acima."
-        )
+        st.info("💡 Digite o nome da escola ou o código INEP na caixa de pesquisa para iniciar a consulta.")
 
 except Exception as e:
     st.error(f"Erro ao carregar os dados. Detalhes: {e}")
