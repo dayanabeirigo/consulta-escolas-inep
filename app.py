@@ -10,13 +10,9 @@ st.set_page_config(
     page_icon="🎓",
 )
 
-# --- LOGO DO IFMG NA BARRA LATERAL ---
-URL_LOGO_IFMG = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Instituto_Federal_de_Minas_Gerais_-_Marca_2015.svg/1200px-Instituto_Federal_de_Minas_Gerais_-_Marca_2015.svg.png"
-
-try:
-    st.sidebar.image(URL_LOGO_IFMG, use_container_width=True)
-except Exception:
-    pass
+# --- LOGO DO IFMG NA BARRA LATERAL (Arquivo local) ---
+if os.path.exists("logo_ifmg.png"):
+    st.sidebar.image("logo_ifmg.png", use_container_width=True)
 
 st.title("🎓 Consulta de Escolas e Institutos (Pública / Privada)")
 st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
