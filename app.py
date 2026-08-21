@@ -119,6 +119,9 @@ try:
         "Digite o Nome da Escola ou Código INEP e aperte Enter:"
     )
 
+    # --- LÓGICA DE EXIBIÇÃO FLEXÍVEL ---
+    
+    # 1. Se o usuário digitou algo no campo de busca:
     if busca:
         busca_limpa = busca.strip()
 
@@ -146,34 +149,40 @@ try:
                 )
 
             resultado = df_filtrado[mascara]
+
+    # 2. Se NÃO digitou nada, mas escolheu um Município ou Estado específico:
+    elif municipio_selecionado != "Todos" or uf_selecionada != "Todos":
+        resultado = df_filtrado
+
+    # 3. Se está no estado inicial ("Todos" e sem busca):
     else:
         resultado = pd.DataFrame()
 
     # --- EXIBIÇÃO ---
-    if busca:
-        if not resultado.empty:
-            st.success(f"Encontrado(s) {len(resultado)} registro(s):")
-            st.dataframe(
-                resultado[
-                    [
-                        "Código INEP",
-                        "Nome da Escola / Campus",
-                        "UF",
-                        "Município",
-                        "Dependência Administrativa",
-                    ]
-                ],
-                use_container_width=True,
-                hide_index=True,
+    if not resultado.empty:
+        st.success(f"Encontrado(s) {len(resultado)} registro(s):")
+        st.dataframe(
+            resultado[
+                [
+                    "Código INEP",
+                    "Nome da Escola / Campus",
+                    "UF",
+                    "Município",
+                    "Dependência Administrativa",
+                ]
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        if busca:
+            st.warning(
+                "Nenhum registro encontrado para o termo buscado neste local. Verifique a digitação ou altere os filtros."
             )
         else:
-            st.warning(
-                "Nenhum registro encontrado. Verifique se a palavra foi digitada corretamente ou ajuste os filtros de Estado/Município na barra lateral."
+            st.info(
+                "💡 **Dica de uso:** Selecione um **Município** na barra lateral para listar todas as escolas dele, ou digite o nome/código na caixa acima."
             )
-    else:
-        st.info(
-            "💡 Digite o nome da unidade ou o código INEP na caixa acima para realizar a consulta."
-        )
 
 except Exception as e:
     st.error(f"Erro ao carregar os dados. Detalhes: {e}")
