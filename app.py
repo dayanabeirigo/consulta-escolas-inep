@@ -27,7 +27,6 @@ def carregar_dados():
     caminho_base = "escolas_censo_2025.csv"
 
     if not os.path.exists(caminho_base):
-        # Fallback para caso o arquivo esteja em subpasta
         import glob
 
         arquivos = glob.glob("**/*escolas_censo_2025*.csv", recursive=True)
@@ -120,7 +119,7 @@ try:
             palavras = normalizar_texto(busca_limpa).split()
             palavras_filtradas = [
                 p
-                f0r p in palavras
+                for p in palavras
                 if p not in ["escola", "colegio", "estadual", "municipal"]
             ]
             if not palavras_filtradas:
