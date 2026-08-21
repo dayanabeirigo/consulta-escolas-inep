@@ -14,8 +14,6 @@ st.set_page_config(
 if os.path.exists("logo_ifmg.png"):
     st.sidebar.image("logo_ifmg.png", use_container_width=True)
 
-st.sidebar.header("📌 Filtros de Localização")
-
 st.title("🎓 Consulta de Escolas e Institutos (Pública / Privada)")
 st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
 
