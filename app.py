@@ -1,7 +1,9 @@
-import os
 import glob
+import re
+import os
 import pandas as pd
 import streamlit as st
+from unidecode import unidecode
 
 st.set_page_config(
     page_title="Consulta de Escolas - Censo Escolar 2025",
@@ -13,9 +15,17 @@ st.title("🔍 Consulta de Escolas (Pública / Privada)")
 st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
 
 
+# Função para normalizar textos (remove acentos, símbolos e põe em caixa baixa)
+def normalizar_texto(texto):
+    if not isinstance(texto, str):
+        return ""
+    texto = unidecode(texto.lower())
+    texto = re.sub(r"[^\w\s]", "", texto)  # Remove pontuações
+    return texto.strip()
+
+
 @st.cache_data
 def carregar_dados():
-    # Busca arquivos .csv ou .zip no projeto
     arquivos_csv = glob.glob("**/*.csv", recursive=True)
     arquivos_zip = glob.glob("**/*.zip", recursive=True)
     todos_arquivos = arquivos_csv + arquivos_zip
@@ -42,7 +52,6 @@ def carregar_dados():
         "TP_DEPENDENCIA",
     ]
 
-    # Lê o arquivo direto (mesmo que seja .zip)
     df = pd.read_csv(
         caminho_arquivo,
         sep=";",
@@ -68,6 +77,9 @@ def carregar_dados():
             "TIPO_DEPENDENCIA": "Dependência Administrativa",
         }
     )
+
+    # Coluna auxiliar otimizada para busca aproximada/flexível
+    df["NOME_NORMALIZADO"] = df["Nome da Escola"].apply(normalizar_texto)
 
     return df
 
@@ -111,16 +123,27 @@ try:
 
     # --- CAMPO DE BUSCA PRINCIPAL ---
     busca = st.text_input(
-        "Digite o Nome da Escola ou o Código INEP e aperte Enter:"
+        "Digite o Nome da Escola (ou termos aproximados / Código INEP) e aperte Enter:"
     )
 
     if busca:
-        resultado = df_filtrado[
-            df_filtrado["Nome da Escola"].str.contains(
-                busca, case=False, na=False
-            )
-            | df_filtrado["Código INEP"].astype(str).str.contains(busca, na=False)
-        ]
+        busca_normalizada = normalizar_texto(busca)
+        palavras_chave = busca_normalizada.split()
+
+        # Verifica se o termo digitado é um número (Código INEP)
+        if busca.strip().isdigit():
+            resultado = df_filtrado[
+                df_filtrado["Código INEP"].astype(str).str.contains(busca.strip(), na=False)
+            ]
+        else:
+            # Filtro aproximado: busca registros que contenham TODAS as palavras digitadas, independente da ordem ou acentos
+            mascara = pd.Series([True] * len(df_filtrado), index=df_filtrado.index)
+            for palavra in palavras_chave:
+                mascara = mascara & df_filtrado["NOME_NORMALIZADO"].str.contains(
+                    palavra, na=False
+                )
+
+            resultado = df_filtrado[mascara]
     else:
         resultado = df_filtrado
 
@@ -142,7 +165,7 @@ try:
                 hide_index=True,
             )
         else:
-            st.warning("Nenhuma escola encontrada com os filtros selecionados.")
+            st.warning("Nenhuma escola encontrada com os termos/filtros selecionados.")
     else:
         st.info(
             "💡 Utilize a barra lateral para filtrar por Estado/Município ou digite o nome/código na caixa acima."
