@@ -93,6 +93,18 @@ try:
             df_filtrado["Município"] == municipio_selecionado
         ]
 
+    # --- STATUS DA BASE DE DADOS ---
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📊 Status da Base de Dados")
+    st.sidebar.metric(
+        label="Total de Escolas na Base", 
+        value=f"{len(df_base):,}".replace(",", ".")
+    )
+    st.sidebar.metric(
+        label="Escolas no Filtro Atual", 
+        value=f"{len(df_filtrado):,}".replace(",", ".")
+    )
+
     # --- CRÉDITOS ---
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🛠️ Créditos")
@@ -102,15 +114,14 @@ try:
     st.sidebar.write("**Instituição:** IFMG - Instituto Federal de Minas Gerais")
     st.sidebar.caption("Sistema desenvolvido para apoio às comissões institucionais.")
 
-    # --- CAMPO DE BUSCA (Texto limpo, sem exemplos) ---
+    # --- CAMPO DE BUSCA ---
     busca = st.text_input(
-        "Digite o Nome da Escola / Campus ou Código INEP e aperte Enter:"
+        "Digite o Nome da Escola ou Código INEP e aperte Enter:"
     )
 
     if busca:
         busca_limpa = busca.strip()
 
-        # Se for código numérico do INEP
         if busca_limpa.isdigit():
             resultado = df_filtrado[
                 df_filtrado["Código INEP"]
@@ -121,7 +132,6 @@ try:
             busca_norm = normalizar_texto(busca_limpa)
             palavras = busca_norm.split()
 
-            # Remove palavras extremamente genéricas apenas se houver mais de uma palavra na busca
             if len(palavras) > 1:
                 palavras_filtradas = [
                     p for p in palavras if p not in ["escola", "colegio"]
@@ -129,7 +139,6 @@ try:
             else:
                 palavras_filtradas = palavras
 
-            # Exige que TODAS as palavras digitadas estejam presentes no nome
             mascara = pd.Series([True] * len(df_filtrado), index=df_filtrado.index)
             for palavra in palavras_filtradas:
                 mascara = mascara & df_filtrado["NOME_NORMALIZADO"].str.contains(
