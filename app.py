@@ -5,12 +5,12 @@ import streamlit as st
 from unidecode import unidecode
 
 st.set_page_config(
-    page_title="Consulta de Escolas - Censo Escolar 2025",
+    page_title="Consulta de Escolas - Censo Escolar 2025 | IFMG",
     layout="wide",
-    page_icon="🔍",
+    page_icon="🎓",
 )
 
-st.title("🔍 Consulta de Escolas (Pública / Privada)")
+st.title("🎓 Consulta de Escolas e Institutos (Pública / Privada)")
 st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
 
 
@@ -55,19 +55,19 @@ def carregar_dados():
     df = df.rename(
         columns={
             "CO_ENTIDADE": "Código INEP",
-            "NO_ENTIDADE": "Nome da Escola",
+            "NO_ENTIDADE": "Nome da Escola / Campus",
             "SG_UF": "UF",
             "NO_MUNICIPIO": "Município",
             "TIPO_DEPENDENCIA": "Dependência Administrativa",
         }
     )
 
-    df["NOME_NORMALIZADO"] = df["Nome da Escola"].apply(normalizar_texto)
+    df["NOME_NORMALIZADO"] = df["Nome da Escola / Campus"].apply(normalizar_texto)
     return df
 
 
 try:
-    with st.spinner("Carregando base de dados das escolas..."):
+    with st.spinner("Carregando base de dados das escolas e institutos..."):
         df_base = carregar_dados()
 
     # --- BARRA LATERAL / FILTROS ---
@@ -99,16 +99,18 @@ try:
     st.sidebar.write(
         "**Desenvolvido por:**\nDayana Cecília Reis Beirigo Dutra"
     )
-    st.sidebar.caption("Sistema desenvolvido para apoio às comissões.")
+    st.sidebar.write("**Instituição:** IFMG - Instituto Federal de Minas Gerais")
+    st.sidebar.caption("Sistema desenvolvido para apoio às comissões institucionais.")
 
-    # --- CAMPO DE BUSCA ---
+    # --- CAMPO DE BUSCA (Texto limpo, sem exemplos) ---
     busca = st.text_input(
-        "Digite o Nome da Escola (ex: Caetano Azeredo) ou Código INEP e aperte Enter:"
+        "Digite o Nome da Escola / Campus ou Código INEP e aperte Enter:"
     )
 
     if busca:
         busca_limpa = busca.strip()
 
+        # Se for código numérico do INEP
         if busca_limpa.isdigit():
             resultado = df_filtrado[
                 df_filtrado["Código INEP"]
@@ -116,18 +118,19 @@ try:
                 .str.contains(busca_limpa, na=False)
             ]
         else:
-            palavras = normalizar_texto(busca_limpa).split()
-            palavras_filtradas = [
-                p
-                for p in palavras
-                if p not in ["escola", "colegio", "estadual", "municipal"]
-            ]
-            if not palavras_filtradas:
+            busca_norm = normalizar_texto(busca_limpa)
+            palavras = busca_norm.split()
+
+            # Remove palavras extremamente genéricas apenas se houver mais de uma palavra na busca
+            if len(palavras) > 1:
+                palavras_filtradas = [
+                    p for p in palavras if p not in ["escola", "colegio"]
+                ]
+            else:
                 palavras_filtradas = palavras
 
-            mascara = pd.Series(
-                [True] * len(df_filtrado), index=df_filtrado.index
-            )
+            # Exige que TODAS as palavras digitadas estejam presentes no nome
+            mascara = pd.Series([True] * len(df_filtrado), index=df_filtrado.index)
             for palavra in palavras_filtradas:
                 mascara = mascara & df_filtrado["NOME_NORMALIZADO"].str.contains(
                     re.escape(palavra), na=False
@@ -145,7 +148,7 @@ try:
                 resultado[
                     [
                         "Código INEP",
-                        "Nome da Escola",
+                        "Nome da Escola / Campus",
                         "UF",
                         "Município",
                         "Dependência Administrativa",
@@ -156,11 +159,11 @@ try:
             )
         else:
             st.warning(
-                "Nenhuma escola encontrada. Tente buscar apenas o nome principal (ex: 'Caetano Azeredo')."
+                "Nenhum registro encontrado. Verifique se a palavra foi digitada corretamente ou ajuste os filtros de Estado/Município na barra lateral."
             )
     else:
         st.info(
-            "💡 Digite o nome da escola ou o código INEP na caixa de pesquisa para iniciar a consulta."
+            "💡 Digite o nome da unidade ou o código INEP na caixa acima para realizar a consulta."
         )
 
 except Exception as e:
