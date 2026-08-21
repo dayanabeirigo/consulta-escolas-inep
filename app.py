@@ -1,4 +1,5 @@
 import os
+import glob
 import pandas as pd
 import streamlit as st
 
@@ -9,18 +10,30 @@ st.set_page_config(
 )
 
 st.title("🔍 Consulta de Escolas (Pública / Privada)")
-st.write(
-    "Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)"
-)
-
-# Caminho para o arquivo oficial do INEP
-CAMINHO_ARQUIVO = os.path.join(
-    "microdados_censo_escolar_2025_v2", "dados", "Tabela_Escola_2025_V2.csv"
-)
+st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
 
 
 @st.cache_data
 def carregar_dados():
+    # Busca arquivos .csv ou .zip no projeto
+    arquivos_csv = glob.glob("**/*.csv", recursive=True)
+    arquivos_zip = glob.glob("**/*.zip", recursive=True)
+    todos_arquivos = arquivos_csv + arquivos_zip
+
+    caminho_arquivo = None
+    for arq in todos_arquivos:
+        if "escola" in arq.lower() or "entidade" in arq.lower():
+            caminho_arquivo = arq
+            break
+
+    if not caminho_arquivo and todos_arquivos:
+        caminho_arquivo = todos_arquivos[0]
+
+    if not caminho_arquivo:
+        raise FileNotFoundError(
+            "Nenhum arquivo de dados (.csv ou .zip) foi encontrado no repositório."
+        )
+
     colunas_necessarias = [
         "CO_ENTIDADE",
         "NO_ENTIDADE",
@@ -29,8 +42,9 @@ def carregar_dados():
         "TP_DEPENDENCIA",
     ]
 
+    # Lê o arquivo direto (mesmo que seja .zip)
     df = pd.read_csv(
-        CAMINHO_ARQUIVO,
+        caminho_arquivo,
         sep=";",
         encoding="iso-8859-1",
         usecols=colunas_necessarias,
