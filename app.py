@@ -10,11 +10,11 @@ st.set_page_config(
     page_icon="🎓",
 )
 
-# --- LOGO DO IFMG NA BARRA LATERAL (Centralizada e menor) ---
+# --- LOGO DO IFMG NA BARRA LATERAL (Horizontal / Discreta) ---
 if os.path.exists("logo_ifmg.png"):
-    col1, col2, col3 = st.sidebar.columns([1, 2, 1])
-    with col2:
-        st.image("logo_ifmg.png", width=110)
+    st.sidebar.image("logo_ifmg.png", use_container_width=True)
+
+st.sidebar.header("📌 Filtros de Localização")
 
 st.title("🎓 Consulta de Escolas e Institutos (Pública / Privada)")
 st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
