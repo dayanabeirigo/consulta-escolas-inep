@@ -10,6 +10,14 @@ st.set_page_config(
     page_icon="🎓",
 )
 
+# --- LOGO DO IFMG NA BARRA LATERAL ---
+URL_LOGO_IFMG = "https://www.ifmg.edu.br/portal/imagens/logomarca/ifmg_vertical.png"
+
+try:
+    st.sidebar.image(URL_LOGO_IFMG, use_container_width=True)
+except Exception:
+    pass
+
 st.title("🎓 Consulta de Escolas e Institutos (Pública / Privada)")
 st.write("Base de dados: Microdados do Censo Escolar 2025 (INEP / EducaMundo)")
 
@@ -71,6 +79,7 @@ try:
         df_base = carregar_dados()
 
     # --- BARRA LATERAL / FILTROS ---
+    st.sidebar.markdown("---")
     st.sidebar.header("📌 Filtros de Localização")
 
     estados = ["Todos"] + sorted(df_base["UF"].dropna().unique().tolist())
@@ -120,8 +129,6 @@ try:
     )
 
     # --- LÓGICA DE EXIBIÇÃO FLEXÍVEL ---
-    
-    # 1. Se o usuário digitou algo no campo de busca:
     if busca:
         busca_limpa = busca.strip()
 
@@ -150,11 +157,9 @@ try:
 
             resultado = df_filtrado[mascara]
 
-    # 2. Se NÃO digitou nada, mas escolheu um Município ou Estado específico:
     elif municipio_selecionado != "Todos" or uf_selecionada != "Todos":
         resultado = df_filtrado
 
-    # 3. Se está no estado inicial ("Todos" e sem busca):
     else:
         resultado = pd.DataFrame()
 
